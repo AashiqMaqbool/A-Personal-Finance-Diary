@@ -1,0 +1,97 @@
+{
+  "expenses": [
+    {
+      "amount": 1250.50,
+      "category": "Food",
+      "description": "Grocery shopping at Whole Foods",
+      "date": "2024-05-15T10:30:00.000Z",
+      "paymentMode": "Credit Card"
+    },
+    {
+      "amount": 850.00,
+      "category": "Transportation",
+      "description": "Monthly metro pass",
+      "date": "2024-05-01T08:00:00.000Z",
+      "paymentMode": "Debit Card"
+    },
+    {
+      "amount": 2500.00,
+      "category": "Housing",
+      "description": "Rent payment",
+      "date": "2024-05-01T00:00:00.000Z",
+      "paymentMode": "Net Banking"
+    },
+    {
+      "amount": 450.75,
+      "category": "Utilities",
+      "description": "Electricity bill",
+      "date": "2024-05-10T12:00:00.000Z",
+      "paymentMode": "UPI"
+    },
+    {
+      "amount": 320.00,
+      "category": "Entertainment",
+      "description": "Movie tickets and dinner",
+      "date": "2024-05-12T19:30:00.000Z",
+      "paymentMode": "Credit Card"
+    },
+    {
+      "amount": 1800.00,
+      "category": "Shopping",
+      "description": "New laptop accessories",
+      "date": "2024-05-08T14:20:00.000Z",
+      "paymentMode": "Credit Card"
+    },
+    {
+      "amount": 650.00,
+      "category": "Healthcare",
+      "description": "Doctor consultation and medicines",
+      "date": "2024-05-05T11:00:00.000Z",
+      "paymentMode": "Cash"
+    }
+  ],
+  "budgets": [
+    {
+      "category": "Food",
+      "monthlyLimit": 5000,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Transportation",
+      "monthlyLimit": 2000,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Housing",
+      "monthlyLimit": 3000,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Utilities",
+      "monthlyLimit": 1000,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Entertainment",
+      "monthlyLimit": 1500,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Shopping",
+      "monthlyLimit": 3000,
+      "month": 5,
+      "year": 2024
+    },
+    {
+      "category": "Healthcare",
+      "monthlyLimit": 2000,
+      "month": 5,
+      "year": 2024
+    }
+  ]
+}

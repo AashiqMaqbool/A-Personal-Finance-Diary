@@ -1,0 +1,29 @@
+ABC Technologies Pvt Ltd
+Employee Payslip - March 2024
+
+Employee Name: John Doe
+Employee ID: EMP12345
+Department: Engineering
+
+Salary Breakdown:
+------------------
+Basic Salary: Rs. 45,000
+HRA: Rs. 18,000
+Transport Allowance: Rs. 3,000
+Special Allowance: Rs. 5,000
+Performance Bonus: Rs. 8,000
+
+Gross Salary: Rs. 79,000
+
+Deductions:
+-----------
+Provident Fund (PF): Rs. 5,400
+Professional Tax: Rs. 200
+Income Tax (TDS): Rs. 6,500
+
+Total Deductions: Rs. 12,100
+
+Net Salary: Rs. 66,900
+
+Payment Date: 31st March 2024
+Payment Mode: Bank Transfer

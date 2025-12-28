@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Expense Tracker Serverless Application
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+    MemorySize: 512
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ExpenseTrackerTable
+    Architectures:
+      - x86_64
+
+Resources:
+  # DynamoDB Table
+  ExpenseTrackerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ExpenseTrackerTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: MonthYearIndex
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # API Gateway
+  ExpenseTrackerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # Expense Lambda Function
+  ExpenseFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: false
+        EntryPoints:
+          - src/handlers/expenseHandler.ts
+    Properties:
+      CodeUri: ../expense-tracker-backend/
+      Handler: expenseHandler.handler
+      Events:
+        CreateExpense:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /expenses
+            Method: POST
+        GetExpenses:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /expenses
+            Method: GET
+        GetExpense:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /expenses/{id}
+            Method: GET
+        UpdateExpense:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /expenses/{id}
+            Method: PUT
+        DeleteExpense:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /expenses/{id}
+            Method: DELETE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExpenseTrackerTable
+
+  # Budget Lambda Function
+  BudgetFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: false
+        EntryPoints:
+          - src/handlers/budgetHandler.ts
+    Properties:
+      CodeUri: ../expense-tracker-backend/
+      Handler: budgetHandler.handler
+      Events:
+        CreateBudget:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /budgets
+            Method: POST
+        GetBudgets:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /budgets
+            Method: GET
+        DeleteBudget:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /budgets/{category}
+            Method: DELETE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExpenseTrackerTable
+
+  # Analytics Lambda Function
+  AnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: false
+        EntryPoints:
+          - src/handlers/analyticsHandler.ts
+    Properties:
+      CodeUri: ../expense-tracker-backend/
+      Handler: analyticsHandler.handler
+      Events:
+        GetAnalytics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExpenseTrackerApi
+            Path: /analytics
+            Method: GET
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExpenseTrackerTable
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ExpenseTrackerApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  
+  TableName:
+    Description: "DynamoDB table name"
+    Value: !Ref ExpenseTrackerTable
+  
+  ExpenseFunctionArn:
+    Description: "Expense Lambda Function ARN"
+    Value: !GetAtt ExpenseFunction.Arn
+  
+  BudgetFunctionArn:
+    Description: "Budget Lambda Function ARN"
+    Value: !GetAtt BudgetFunction.Arn
+  
+  AnalyticsFunctionArn:
+    Description: "Analytics Lambda Function ARN"
+    Value: !GetAtt AnalyticsFunction.Arn
