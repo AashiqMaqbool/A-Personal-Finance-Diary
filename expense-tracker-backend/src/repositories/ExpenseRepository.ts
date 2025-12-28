@@ -144,6 +144,7 @@ export class ExpenseRepository {
       paymentMode: item.paymentMode,
       year: item.year,
       month: item.month,
+      day: item.day,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
     };

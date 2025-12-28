@@ -12,6 +12,7 @@ export class ExpenseService {
     const date = new Date(expenseData.date);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
+    const day = date.getDate();
 
     return this.repository.create(userId, {
       amount: expenseData.amount,
@@ -20,7 +21,8 @@ export class ExpenseService {
       date: expenseData.date,
       paymentMode: expenseData.paymentMode,
       year,
-      month
+      month,
+      day
     });
   }
 
