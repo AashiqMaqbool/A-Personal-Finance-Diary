@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, TrendingUp, AlertTriangle, CheckCircle, DollarSign, ChevronLeft, ChevronRight, Calendar, X, Edit2 } from 'lucide-react';
+import { Plus, TrendingUp, AlertTriangle, CheckCircle, DollarSign, ChevronLeft, ChevronRight, Calendar, X, Edit2, Copy, Sparkles } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { budgetService } from '../services/budgetService';
 import { expenseService } from '../services/expenseService';
@@ -22,6 +22,12 @@ export default function EnhancedBudget() {
   const [investmentGoal, setInvestmentGoal] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showAIBudgetModal, setShowAIBudgetModal] = useState(false);
+  const [aiSuggestedBudgets, setAISuggestedBudgets] = useState<Record<string, number>>({});
+  const [copyFromMonth, setCopyFromMonth] = useState(new Date().getMonth());
+  const [copyFromYear, setCopyFromYear] = useState(new Date().getFullYear());
+  const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; title: string; message: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -158,6 +164,125 @@ export default function EnhancedBudget() {
     }
   };
 
+  const handleCopyBudget = async () => {
+    try {
+      const sourceBudgets = await budgetService.getByMonth(copyFromMonth, copyFromYear);
+      if (sourceBudgets.length === 0) {
+        setAlert({
+          type: 'error',
+          title: 'No Budgets Found',
+          message: 'No budgets found for the selected month. Please choose a different month or create budgets first.',
+        });
+        return;
+      }
+      const promises = sourceBudgets.map(b =>
+        budgetService.createOrUpdate({
+          category: b.category,
+          monthlyLimit: b.monthlyLimit,
+          month: selectedMonth,
+          year: selectedYear,
+        })
+      );
+      await Promise.all(promises);
+      setShowCopyModal(false);
+      setAlert({
+        type: 'success',
+        title: 'Budget Copied',
+        message: `Successfully copied ${sourceBudgets.length} budget(s) to ${getMonthName(selectedMonth)} ${selectedYear}.`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Failed to copy budget:', error);
+      setAlert({
+        type: 'error',
+        title: 'Copy Failed',
+        message: 'Failed to copy budget. Please try again.',
+      });
+    }
+  };
+
+  const generateAIBudget = async () => {
+    try {
+      const last3Months = [];
+      for (let i = 1; i <= 3; i++) {
+        let month = selectedMonth - i;
+        let year = selectedYear;
+        if (month <= 0) {
+          month += 12;
+          year -= 1;
+        }
+        const monthExpenses = await expenseService.getByMonth(month, year);
+        last3Months.push(...monthExpenses);
+      }
+
+      if (last3Months.length === 0) {
+        setAlert({
+          type: 'info',
+          title: 'Insufficient Data',
+          message: 'Not enough expense history to generate budget suggestions. Please add expenses for at least one of the previous 3 months.',
+        });
+        return;
+      }
+
+      const categorySpending: Record<string, number[]> = {};
+      last3Months.forEach(expense => {
+        if (!categorySpending[expense.category]) {
+          categorySpending[expense.category] = [];
+        }
+        categorySpending[expense.category].push(expense.amount);
+      });
+
+      const suggestions: Record<string, number> = {};
+      Object.entries(categorySpending).forEach(([category, amounts]) => {
+        const total = amounts.reduce((sum, amt) => sum + amt, 0);
+        const avg = total / 3;
+        const buffer = avg * 0.15;
+        suggestions[category] = Math.round((avg + buffer) / 10) * 10;
+      });
+
+      setAISuggestedBudgets(suggestions);
+      setShowAIBudgetModal(true);
+    } catch (error) {
+      console.error('Failed to generate budget:', error);
+      setAlert({
+        type: 'error',
+        title: 'Generation Failed',
+        message: 'Failed to generate budget suggestions. Please try again.',
+      });
+    }
+  };
+
+  const handleApproveAIBudget = async () => {
+    try {
+      const promises = Object.entries(aiSuggestedBudgets)
+        .filter(([_, value]) => value > 0)
+        .map(([category, value]) =>
+          budgetService.createOrUpdate({
+            category: category as ExpenseCategory,
+            monthlyLimit: value,
+            month: selectedMonth,
+            year: selectedYear,
+          })
+        );
+      await Promise.all(promises);
+      setShowAIBudgetModal(false);
+      setAISuggestedBudgets({});
+      setAlert({
+        type: 'success',
+        title: 'Budget Applied',
+        message: `Successfully applied smart budget suggestions for ${getMonthName(selectedMonth)} ${selectedYear}.`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Failed to save budgets:', error);
+      setAlert({
+        type: 'error',
+        title: 'Save Failed',
+        message: 'Failed to save budget suggestions. Please try again.',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -218,13 +343,29 @@ export default function EnhancedBudget() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => setShowSetupAll(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Setup Budgets
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCopyModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors"
+            >
+              <Copy className="w-5 h-5" />
+              Copy Budget
+            </button>
+            <button
+              onClick={generateAIBudget}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+            >
+              <Sparkles className="w-5 h-5" />
+              Smart Budget
+            </button>
+            <button
+              onClick={() => setShowSetupAll(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Setup Budgets
+            </button>
+          </div>
         </div>
 
         {/* Overall Summary */}
@@ -576,6 +717,132 @@ export default function EnhancedBudget() {
                   Save Budgets
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Copy Budget Modal */}
+        {showCopyModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Copy Budget</h2>
+                  <p className="text-sm text-slate-600 mt-1">Copy budgets from another month</p>
+                </div>
+                <button onClick={() => setShowCopyModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Copy From</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select value={copyFromMonth} onChange={(e) => setCopyFromMonth(Number(e.target.value))} className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                    </select>
+                    <select value={copyFromYear} onChange={(e) => setCopyFromYear(Number(e.target.value))} className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-900">
+                    <strong>Copy To:</strong> {getMonthName(selectedMonth)} {selectedYear}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setShowCopyModal(false)} className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                  Cancel
+                </button>
+                <button onClick={handleCopyBudget} className="flex-1 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800">
+                  Copy Budget
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Budget Modal */}
+        {showAIBudgetModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-3xl w-full p-6 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Smart Budget Suggestions</h2>
+                  <p className="text-sm text-slate-600 mt-1">Based on your last 3 months spending patterns</p>
+                </div>
+                <button onClick={() => { setShowAIBudgetModal(false); setAISuggestedBudgets({}); }} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 mb-1">Intelligent Analysis</p>
+                    <p className="text-xs text-slate-600">
+                      These budgets are calculated based on your average spending plus a 15% buffer for flexibility.
+                      You can adjust any amount before approving.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {Object.entries(aiSuggestedBudgets).map(([category, amount]) => (
+                  <div key={category} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <label className="flex-1 text-sm font-medium text-slate-700">{category}</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAISuggestedBudgets({ ...aiSuggestedBudgets, [category]: parseFloat(e.target.value) || 0 })}
+                      className="w-40 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button onClick={() => { setShowAIBudgetModal(false); setAISuggestedBudgets({}); }} className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                  Decline
+                </button>
+                <button onClick={handleApproveAIBudget} className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                  Approve & Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Alert */}
+        {alert && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className={`mb-4 p-3 rounded-full ${
+                  alert.type === 'success' ? 'bg-green-50 border-2 border-green-200' :
+                  alert.type === 'error' ? 'bg-red-50 border-2 border-red-200' :
+                  'bg-blue-50 border-2 border-blue-200'
+                }`}>
+                  {alert.type === 'success' ? <CheckCircle className="w-12 h-12 text-green-600" /> :
+                   alert.type === 'error' ? <AlertTriangle className="w-12 h-12 text-red-600" /> :
+                   <AlertTriangle className="w-12 h-12 text-blue-600" />}
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{alert.title}</h3>
+                <p className="text-slate-600">{alert.message}</p>
+              </div>
+              <button
+                onClick={() => setAlert(null)}
+                className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800"
+              >
+                OK
+              </button>
             </div>
           </div>
         )}
