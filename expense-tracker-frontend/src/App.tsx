@@ -9,6 +9,7 @@ import Timeline from './pages/Timeline';
 import EnhancedExpenses from './pages/EnhancedExpenses';
 import EnhancedBudget from './pages/EnhancedBudget';
 import Goals from './pages/Goals';
+import GoalAchievements from './pages/GoalAchievements';
 import Portfolio from './pages/Portfolio';
 import Insights from './pages/Insights';
 import Dashboard from './pages/Dashboard';
@@ -146,6 +147,7 @@ function AppLayout() {
             <Route path="/salary" element={<Salary />} />
             <Route path="/emi-tracker" element={<EMITracker />} />
             <Route path="/goals" element={<Goals />} />
+            <Route path="/goals/achievements" element={<GoalAchievements />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/analytics" element={<Dashboard />} />
             <Route path="/insights" element={<Insights />} />
