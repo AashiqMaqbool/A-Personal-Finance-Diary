@@ -66,6 +66,7 @@ export default function Salary() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [advisorStep, setAdvisorStep] = useState(1);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info' | 'confirm'; title: string; message: string; onConfirm?: () => void } | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [userPreferences, setUserPreferences] = useState({
     riskLevel: 'moderate',
     investmentGoal: 'wealth',
@@ -187,6 +188,26 @@ export default function Salary() {
           : s
       );
       saveData(updated);
+      
+      // Update in Income module
+      const incomes = getUserData<any[]>('income_tracker_data', []);
+      const updatedIncomes = incomes.map(inc => {
+        if (inc.source === editingEntry.company && inc.month === editingEntry.month && inc.year === editingEntry.year && inc.category === 'Salary') {
+          const incomeDate = new Date(formData.year, formData.month - 1, 1);
+          return {
+            ...inc,
+            amount: netSalary,
+            source: formData.company,
+            description: `Salary for ${months[formData.month - 1]} ${formData.year}`,
+            date: incomeDate.toISOString(),
+            year: formData.year,
+            month: formData.month,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return inc;
+      });
+      setUserData('income_tracker_data', updatedIncomes);
     } else {
       const newEntry: SalaryEntry = {
         id: `sal-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
@@ -202,6 +223,24 @@ export default function Salary() {
         components: customComponents,
       };
       saveData([...salaries, newEntry]);
+      
+      // Add to Income module
+      const incomes = getUserData<any[]>('income_tracker_data', []);
+      const incomeDate = new Date(formData.year, formData.month - 1, 1);
+      const newIncome = {
+        incomeId: `inc-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        amount: netSalary,
+        category: 'Salary',
+        source: formData.company,
+        description: `Salary for ${months[formData.month - 1]} ${formData.year}`,
+        date: incomeDate.toISOString(),
+        year: formData.year,
+        month: formData.month,
+        day: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setUserData('income_tracker_data', [...incomes, newIncome]);
     }
     resetForm();
   };
@@ -230,7 +269,22 @@ export default function Salary() {
       title: 'Delete Salary Entry',
       message: 'Are you sure you want to delete this salary entry?',
       onConfirm: () => {
+        const salaryToDelete = salaries.find(s => s.id === id);
         saveData(salaries.filter(s => s.id !== id));
+        
+        // Remove from Income module
+        if (salaryToDelete) {
+          const incomes = getUserData<any[]>('income_tracker_data', []);
+          const updatedIncomes = incomes.filter(inc => {
+            const match = inc.source === salaryToDelete.company && 
+                         inc.month === salaryToDelete.month && 
+                         inc.year === salaryToDelete.year && 
+                         inc.category === 'Salary';
+            return !match;
+          });
+          setUserData('income_tracker_data', updatedIncomes);
+        }
+        
         setAlert(null);
       },
     });
@@ -395,6 +449,24 @@ export default function Salary() {
       
       saveData([...salaries, newSalary]);
       
+      // Add to Income module
+      const incomes = getUserData<any[]>('income_tracker_data', []);
+      const incomeDate = new Date(payslip.year, payslip.month - 1, 1);
+      const newIncome = {
+        incomeId: `inc-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        amount: payslip.netSalary,
+        category: 'Salary',
+        source: payslip.company,
+        description: `Salary for ${months[payslip.month - 1]} ${payslip.year}`,
+        date: incomeDate.toISOString(),
+        year: payslip.year,
+        month: payslip.month,
+        day: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setUserData('income_tracker_data', [...incomes, newIncome]);
+      
       // Mark payslip as added
       const updatedPayslips = payslips.map(p => 
         p.id === payslip.id ? { ...p, addedToTracker: true } : p
@@ -405,7 +477,7 @@ export default function Salary() {
       setAlert({
         type: 'success',
         title: 'Success',
-        message: '✓ Added to Salary Tracker successfully!',
+        message: '✓ Added to Salary Tracker and Income module successfully!',
         onConfirm: () => setAlert(null),
       });
     } catch (error) {
@@ -613,8 +685,14 @@ const generateFinancialPlan = () => {
 
         {/* Salary Entries Table */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-slate-900">Salary History</h2>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors flex items-center gap-2"
+            >
+              {sortOrder === 'desc' ? '↓ Newest First' : '↑ Oldest First'}
+            </button>
           </div>
           {salaries.length === 0 ? (
             <div className="p-12 text-center text-slate-500">
@@ -638,7 +716,16 @@ const generateFinancialPlan = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...salaries].reverse().map(salary => (
+                  {[...salaries].sort((a, b) => {
+                    // Sort by year, then by month
+                    if (sortOrder === 'desc') {
+                      if (a.year !== b.year) return b.year - a.year;
+                      return b.month - a.month;
+                    } else {
+                      if (a.year !== b.year) return a.year - b.year;
+                      return a.month - b.month;
+                    }
+                  }).map(salary => (
                     <tr key={salary.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 text-sm text-slate-900 font-medium">{months[salary.month - 1]} {salary.year}</td>
                       <td className="py-3 px-4 text-sm text-slate-600">{salary.company}</td>

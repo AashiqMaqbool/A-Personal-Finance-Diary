@@ -24,7 +24,9 @@ export const migrateDataToUser = (email: string) => {
     'salary_company_templates',
     'payslip_room_data',
     'emi_tracker_data',
-    'portfolio_data'
+    'portfolio_data',
+    'income_tracker_data',
+    'timeline_data'
   ];
 
   keysToMigrate.forEach(key => {

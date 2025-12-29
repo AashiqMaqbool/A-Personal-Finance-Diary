@@ -4,6 +4,7 @@ import { ExpenseForm } from '../components/expense/ExpenseForm';
 import { ExpenseList } from '../components/expense/ExpenseList';
 import { Modal } from '../components/common/Modal';
 import { Button } from '../components/common/Button';
+import { PeriodNavigator } from '../components/common/PeriodNavigator';
 import { expenseService } from '../services/expenseService';
 import { Expense } from '../types';
 import { getCurrentMonthYear } from '../utils/formatters';
@@ -12,15 +13,17 @@ export const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const { month, year } = getCurrentMonthYear();
+  const { month: currentMonth, year: currentYear } = getCurrentMonthYear();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   useEffect(() => {
     loadExpenses();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const loadExpenses = async () => {
     try {
-      const data = await expenseService.getByMonth(month, year);
+      const data = await expenseService.getByMonth(selectedMonth, selectedYear);
       setExpenses(data);
     } catch (error) {
       console.error('Failed to load expenses:', error);
@@ -69,10 +72,20 @@ export const Expenses: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Expenses</h1>
-        <Button onClick={() => { setEditingExpense(null); setIsModalOpen(true); }}>
-          <Plus size={20} className="inline mr-2" />
-          Add Expense
-        </Button>
+        <div className="flex items-center gap-3">
+          <PeriodNavigator
+            month={selectedMonth}
+            year={selectedYear}
+            onPeriodChange={(month, year) => {
+              setSelectedMonth(month);
+              setSelectedYear(year);
+            }}
+          />
+          <Button onClick={() => { setEditingExpense(null); setIsModalOpen(true); }}>
+            <Plus size={20} className="inline mr-2" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       <ExpenseList expenses={expenses} onEdit={handleEdit} onDelete={handleDelete} />

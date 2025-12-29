@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { 
   Home as HomeIcon, Calendar, Receipt, Wallet, Target, 
-  TrendingUp, Lightbulb, BarChart3, Menu, X, Banknote, CreditCard, LogOut, User 
+  TrendingUp, Lightbulb, BarChart3, Menu, X, Banknote, CreditCard, LogOut, User, DollarSign 
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
@@ -15,6 +15,7 @@ import Insights from './pages/Insights';
 import Dashboard from './pages/Dashboard';
 import Salary from './pages/Salary';
 import EMITracker from './pages/EMITracker';
+import Incomes from './pages/Incomes';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import WelcomeToast from './components/WelcomeToast';
@@ -91,6 +92,7 @@ function AppLayout() {
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Timeline', href: '/timeline', icon: Calendar },
     { name: 'Expenses', href: '/expenses', icon: Receipt },
+    { name: 'Income', href: '/income', icon: DollarSign },
     { name: 'Budget', href: '/budget', icon: Wallet },
     { name: 'Salary', href: '/salary', icon: Banknote },
     { name: 'EMI Tracker', href: '/emi-tracker', icon: CreditCard },
@@ -215,6 +217,7 @@ function AppLayout() {
             <Route path="/" element={<Home />} />
             <Route path="/timeline" element={<Timeline />} />
             <Route path="/expenses" element={<EnhancedExpenses />} />
+            <Route path="/income" element={<Incomes />} />
             <Route path="/budget" element={<EnhancedBudget />} />
             <Route path="/salary" element={<Salary />} />
             <Route path="/emi-tracker" element={<EMITracker />} />

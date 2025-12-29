@@ -1,55 +1,62 @@
-import axios from 'axios';
-import { Income, ApiResponse } from '../types';
+import { Income } from '../types';
+import { getUserData, setUserData } from '../utils/userStorage';
+import { getCurrentUser } from '../utils/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const STORAGE_KEY = 'income_tracker_data';
+
+const loadFromStorage = (): Income[] => {
+  return getUserData<Income[]>(STORAGE_KEY, []);
+};
+
+const saveToStorage = (incomes: Income[]) => {
+  setUserData(STORAGE_KEY, incomes);
+};
+
+let mockIncomes: Income[] = loadFromStorage();
 
 export const incomeService = {
-  async createIncome(income: Omit<Income, 'incomeId' | 'createdAt' | 'updatedAt'>): Promise<Income> {
-    const response = await axios.post<ApiResponse<Income>>(`${API_BASE_URL}/income`, income);
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to create income');
-    }
-    return response.data.data;
+  async create(data: Omit<Income, 'incomeId' | 'year' | 'month' | 'day' | 'createdAt' | 'updatedAt'>) {
+    const date = new Date(data.date);
+    const newIncome: Income = {
+      ...data,
+      incomeId: `inc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockIncomes.push(newIncome);
+    saveToStorage(mockIncomes);
+    return newIncome;
   },
 
-  async getIncome(month: number, year: number): Promise<Income[]> {
-    const response = await axios.get<ApiResponse<Income[]>>(`${API_BASE_URL}/income`, {
-      params: { month, year },
-    });
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to fetch income');
-    }
-    return response.data.data;
+  async getByMonth(month: number, year: number): Promise<Income[]> {
+    mockIncomes = loadFromStorage();
+    return mockIncomes.filter(i => i.month === month && i.year === year);
   },
 
-  async getIncomeById(incomeId: string): Promise<Income> {
-    const response = await axios.get<ApiResponse<Income>>(`${API_BASE_URL}/income/${incomeId}`);
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to fetch income');
+  async update(incomeId: string, data: Partial<Income>) {
+    mockIncomes = loadFromStorage();
+    const index = mockIncomes.findIndex(i => i.incomeId === incomeId);
+    if (index !== -1) {
+      const updatedData = { ...data };
+      if (data.date) {
+        const date = new Date(data.date);
+        updatedData.year = date.getFullYear();
+        updatedData.month = date.getMonth() + 1;
+        updatedData.day = date.getDate();
+      }
+      mockIncomes[index] = { ...mockIncomes[index], ...updatedData, updatedAt: new Date().toISOString() };
+      saveToStorage(mockIncomes);
+      return mockIncomes[index];
     }
-    return response.data.data;
+    throw new Error('Income not found');
   },
 
-  async updateIncome(incomeId: string, updates: Partial<Income>): Promise<Income> {
-    const response = await axios.put<ApiResponse<Income>>(`${API_BASE_URL}/income/${incomeId}`, updates);
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to update income');
-    }
-    return response.data.data;
-  },
-
-  async deleteIncome(incomeId: string): Promise<void> {
-    const response = await axios.delete<ApiResponse<void>>(`${API_BASE_URL}/income/${incomeId}`);
-    if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to delete income');
-    }
-  },
-
-  async getYearlyIncome(year: number): Promise<Income[]> {
-    const response = await axios.get<ApiResponse<Income[]>>(`${API_BASE_URL}/income/yearly/${year}`);
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to fetch yearly income');
-    }
-    return response.data.data;
+  async delete(incomeId: string) {
+    mockIncomes = loadFromStorage();
+    mockIncomes = mockIncomes.filter(i => i.incomeId !== incomeId);
+    saveToStorage(mockIncomes);
   },
 };

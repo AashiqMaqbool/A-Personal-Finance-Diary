@@ -1,0 +1,101 @@
+/* Enterprise Theme - Black, Red, Yellow, Green + AI Gradient */
+
+:root {
+  /* Primary Black */
+  --color-primary: #212529;
+  --color-primary-light: #343a40;
+  --color-primary-dark: #0a0c0d;
+  
+  /* Success Green */
+  --color-success: #22c55e;
+  --color-success-light: #4ade80;
+  --color-success-dark: #16a34a;
+  
+  /* Warning Yellow */
+  --color-warning: #eab308;
+  --color-warning-light: #facc15;
+  --color-warning-dark: #ca8a04;
+  
+  /* Danger Red */
+  --color-danger: #ef4444;
+  --color-danger-light: #f87171;
+  --color-danger-dark: #dc2626;
+  
+  /* AI Gradient */
+  --color-ai-from: #8b5cf6;
+  --color-ai-via: #6366f1;
+  --color-ai-to: #3b82f6;
+}
+
+/* Global Button Styles */
+.btn-primary {
+  @apply bg-primary-900 text-white hover:bg-primary-800 transition-colors;
+}
+
+.btn-success {
+  @apply bg-success-600 text-white hover:bg-success-700 transition-colors;
+}
+
+.btn-warning {
+  @apply bg-warning-500 text-primary-900 hover:bg-warning-600 transition-colors;
+}
+
+.btn-danger {
+  @apply bg-danger-600 text-white hover:bg-danger-700 transition-colors;
+}
+
+.btn-ai {
+  @apply bg-gradient-to-r from-ai-from via-ai-via to-ai-to text-white hover:opacity-90 transition-opacity;
+}
+
+/* Card Styles */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-primary-200;
+}
+
+.card-success {
+  @apply bg-success-50 border-success-200;
+}
+
+.card-warning {
+  @apply bg-warning-50 border-warning-200;
+}
+
+.card-danger {
+  @apply bg-danger-50 border-danger-200;
+}
+
+/* Badge Styles */
+.badge {
+  @apply px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.badge-primary {
+  @apply bg-primary-900 text-white;
+}
+
+.badge-success {
+  @apply bg-success-600 text-white;
+}
+
+.badge-warning {
+  @apply bg-warning-500 text-primary-900;
+}
+
+.badge-danger {
+  @apply bg-danger-600 text-white;
+}
+
+/* Input Styles */
+.input {
+  @apply px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-900 focus:border-transparent;
+}
+
+/* AI Glow Effect */
+.ai-glow {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.ai-glow:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+}
