@@ -1,37 +1,33 @@
 import { api } from './api';
 import { Budget } from '../types';
 import { MOCK_MODE } from './mockData';
+import { getUserData, setUserData } from '../utils/userStorage';
+import { getCurrentUser } from '../utils/auth';
 
 const STORAGE_KEY = 'expense_tracker_budgets';
 
 const loadFromStorage = (): Budget[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
+  return getUserData<Budget[]>(STORAGE_KEY, []);
 };
 
 const saveToStorage = (budgets: Budget[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets));
-  } catch (error) {
-    console.error('Failed to save to localStorage:', error);
-  }
+  setUserData(STORAGE_KEY, budgets);
 };
 
 let mockBudgets: Budget[] = loadFromStorage();
 
-// Initialize with sample data if empty
+// Initialize with sample data if empty (only for demo user)
 if (mockBudgets.length === 0) {
-  mockBudgets = [
-    { budgetId: 'bud-1', category: 'Food & Dining', monthlyLimit: 5000, spent: 1200, remaining: 3800, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
-    { budgetId: 'bud-2', category: 'Transportation', monthlyLimit: 3000, spent: 800, remaining: 2200, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
-    { budgetId: 'bud-3', category: 'Shopping', monthlyLimit: 4000, spent: 2500, remaining: 1500, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
-    { budgetId: 'bud-4', category: 'Entertainment', monthlyLimit: 2000, spent: 0, remaining: 2000, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
-  ];
-  saveToStorage(mockBudgets);
+  const user = getCurrentUser();
+  if (user && user.email === 'aashiq.mq7@gmail.com') {
+    mockBudgets = [
+      { budgetId: 'bud-1', category: 'Food & Dining', monthlyLimit: 5000, spent: 1200, remaining: 3800, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
+      { budgetId: 'bud-2', category: 'Transportation', monthlyLimit: 3000, spent: 800, remaining: 2200, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
+      { budgetId: 'bud-3', category: 'Shopping', monthlyLimit: 4000, spent: 2500, remaining: 1500, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
+      { budgetId: 'bud-4', category: 'Entertainment', monthlyLimit: 2000, spent: 0, remaining: 2000, year: 2024, month: 12, createdAt: '2024-12-01T00:00:00Z', updatedAt: '2024-12-01T00:00:00Z' },
+    ];
+    saveToStorage(mockBudgets);
+  }
 }
 
 export const budgetService = {

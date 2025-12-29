@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Target, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Edit2, Trash2, X, Sparkles, CalendarDays, Eye, ArrowLeft, Brain, Receipt, Flag } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import { getUserData, setUserData } from '../utils/userStorage';
 
 interface Contribution {
   amount: number;
@@ -88,11 +89,8 @@ export default function Goals() {
 
   const loadData = () => {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        setGoals(Array.isArray(parsed) ? parsed : []);
-      }
+      const data = getUserData<Goal[]>(STORAGE_KEY, []);
+      setGoals(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to load goals:', error);
       setGoals([]);
@@ -101,7 +99,7 @@ export default function Goals() {
 
   const saveData = (data: Goal[]) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      setUserData(STORAGE_KEY, data);
       setGoals(data);
     } catch (error) {
       console.error('Failed to save goals:', error);

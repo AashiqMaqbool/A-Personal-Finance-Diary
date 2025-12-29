@@ -1,36 +1,32 @@
 import { api } from './api';
 import { Expense } from '../types';
 import { MOCK_MODE } from './mockData';
+import { getUserData, setUserData } from '../utils/userStorage';
+import { getCurrentUser } from '../utils/auth';
 
 const STORAGE_KEY = 'expense_tracker_expenses';
 
 const loadFromStorage = (): Expense[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
+  return getUserData<Expense[]>(STORAGE_KEY, []);
 };
 
 const saveToStorage = (expenses: Expense[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-  } catch (error) {
-    console.error('Failed to save to localStorage:', error);
-  }
+  setUserData(STORAGE_KEY, expenses);
 };
 
 let mockExpenses: Expense[] = loadFromStorage();
 
-// Initialize with sample data if empty
+// Initialize with sample data if empty (only for demo user)
 if (mockExpenses.length === 0) {
-  mockExpenses = [
-    { expenseId: 'exp-1', amount: 1200, category: 'Food & Dining', description: 'Grocery shopping', date: '2024-12-05T00:00:00Z', paymentMode: 'Credit Card', year: 2024, month: 12, day: 5, createdAt: '2024-12-05T00:00:00Z', updatedAt: '2024-12-05T00:00:00Z' },
-    { expenseId: 'exp-2', amount: 800, category: 'Transportation', description: 'Fuel', date: '2024-12-08T00:00:00Z', paymentMode: 'UPI', year: 2024, month: 12, day: 8, createdAt: '2024-12-08T00:00:00Z', updatedAt: '2024-12-08T00:00:00Z' },
-    { expenseId: 'exp-3', amount: 2500, category: 'Shopping', description: 'Clothes', date: '2024-12-10T00:00:00Z', paymentMode: 'Debit Card', year: 2024, month: 12, day: 10, createdAt: '2024-12-10T00:00:00Z', updatedAt: '2024-12-10T00:00:00Z' },
-  ];
-  saveToStorage(mockExpenses);
+  const user = getCurrentUser();
+  if (user && user.email === 'aashiq.mq7@gmail.com') {
+    mockExpenses = [
+      { expenseId: 'exp-1', amount: 1200, category: 'Food & Dining', description: 'Grocery shopping', date: '2024-12-05T00:00:00Z', paymentMode: 'Credit Card', year: 2024, month: 12, day: 5, createdAt: '2024-12-05T00:00:00Z', updatedAt: '2024-12-05T00:00:00Z' },
+      { expenseId: 'exp-2', amount: 800, category: 'Transportation', description: 'Fuel', date: '2024-12-08T00:00:00Z', paymentMode: 'UPI', year: 2024, month: 12, day: 8, createdAt: '2024-12-08T00:00:00Z', updatedAt: '2024-12-08T00:00:00Z' },
+      { expenseId: 'exp-3', amount: 2500, category: 'Shopping', description: 'Clothes', date: '2024-12-10T00:00:00Z', paymentMode: 'Debit Card', year: 2024, month: 12, day: 10, createdAt: '2024-12-10T00:00:00Z', updatedAt: '2024-12-10T00:00:00Z' },
+    ];
+    saveToStorage(mockExpenses);
+  }
 }
 
 export const expenseService = {

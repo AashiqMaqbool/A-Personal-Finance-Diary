@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, CreditCard, Calendar, TrendingDown, CheckCircle, Edit2, Trash2, Eye, XCircle, Calculator, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import { getUserData, setUserData } from '../utils/userStorage';
 
 // Disable number input scroll
 const style = document.createElement('style');
@@ -90,25 +91,12 @@ export default function EMITracker() {
   }, []);
 
   const loadData = () => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        setEmis(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch (error) {
-      console.error('Failed to load EMI data:', error);
-      setEmis([]);
-    }
+    setEmis(getUserData<EMI[]>(STORAGE_KEY, []));
   };
 
   const saveData = (data: EMI[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setEmis(data);
-    } catch (error) {
-      console.error('Failed to save EMI data:', error);
-    }
+    setUserData(STORAGE_KEY, data);
+    setEmis(data);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

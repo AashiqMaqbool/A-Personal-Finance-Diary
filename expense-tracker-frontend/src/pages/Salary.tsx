@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, X, DollarSign, TrendingUp, PieChart, Calendar, Briefcase, Edit2, Trash2, Sparkles, Upload, FileText, Eye, Building2, CheckCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import CustomAlert from '../components/CustomAlert';
+import { getUserData, setUserData } from '../utils/userStorage';
 
 interface SalaryEntry {
   id: string;
@@ -91,63 +92,30 @@ export default function Salary() {
   }, []);
 
   const loadData = () => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        setSalaries(JSON.parse(data));
-      }
-    } catch (error) {
-      console.error('Failed to load salary data:', error);
-    }
+    setSalaries(getUserData<SalaryEntry[]>(STORAGE_KEY, []));
   };
 
   const loadTemplates = () => {
-    try {
-      const data = localStorage.getItem(TEMPLATES_KEY);
-      if (data) {
-        setCompanyTemplates(JSON.parse(data));
-      }
-    } catch (error) {
-      console.error('Failed to load templates:', error);
-    }
+    setCompanyTemplates(getUserData<CompanyTemplate[]>(TEMPLATES_KEY, []));
   };
 
   const loadPayslips = () => {
-    try {
-      const data = localStorage.getItem(PAYSLIP_STORAGE_KEY);
-      if (data) {
-        setPayslips(JSON.parse(data));
-      }
-    } catch (error) {
-      console.error('Failed to load payslips:', error);
-    }
+    setPayslips(getUserData<AnalyzedPayslip[]>(PAYSLIP_STORAGE_KEY, []));
   };
 
   const savePayslips = (data: AnalyzedPayslip[]) => {
-    try {
-      localStorage.setItem(PAYSLIP_STORAGE_KEY, JSON.stringify(data));
-      setPayslips(data);
-    } catch (error) {
-      console.error('Failed to save payslips:', error);
-    }
+    setUserData(PAYSLIP_STORAGE_KEY, data);
+    setPayslips(data);
   };
 
   const saveTemplates = (templates: CompanyTemplate[]) => {
-    try {
-      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
-      setCompanyTemplates(templates);
-    } catch (error) {
-      console.error('Failed to save templates:', error);
-    }
+    setUserData(TEMPLATES_KEY, templates);
+    setCompanyTemplates(templates);
   };
 
   const saveData = (data: SalaryEntry[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setSalaries(data);
-    } catch (error) {
-      console.error('Failed to save salary data:', error);
-    }
+    setUserData(STORAGE_KEY, data);
+    setSalaries(data);
   };
 
   const handleCompanyChange = (company: string) => {

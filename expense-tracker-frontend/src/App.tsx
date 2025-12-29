@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { 
   Home as HomeIcon, Calendar, Receipt, Wallet, Target, 
-  TrendingUp, Lightbulb, BarChart3, Menu, X, Banknote, CreditCard 
+  TrendingUp, Lightbulb, BarChart3, Menu, X, Banknote, CreditCard, LogOut, User 
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Home from './pages/Home';
 import Timeline from './pages/Timeline';
 import EnhancedExpenses from './pages/EnhancedExpenses';
@@ -15,12 +15,71 @@ import Insights from './pages/Insights';
 import Dashboard from './pages/Dashboard';
 import Salary from './pages/Salary';
 import EMITracker from './pages/EMITracker';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import WelcomeToast from './components/WelcomeToast';
+import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
+import { migrateDataToUser } from './utils/userStorage';
 
 function App() {
   return (
     <BrowserRouter>
-      <AppLayout />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/*" element={<ProtectedRoute><AppLayout /></ProtectedRoute>} />
+      </Routes>
     </BrowserRouter>
+  );
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const [checking, setChecking] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const user = getCurrentUser();
+      if (user) {
+        migrateDataToUser(user.email);
+        
+        // Check if this is a fresh login (show welcome)
+        const welcomeShown = sessionStorage.getItem('welcome_shown');
+        if (!welcomeShown) {
+          setShowWelcome(true);
+          sessionStorage.setItem('welcome_shown', 'true');
+        }
+      }
+    }
+    setChecking(false);
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <>
+      {children}
+      {showWelcome && getCurrentUser() && (
+        <WelcomeToast
+          message="Your personalized financial dashboard is ready!"
+          userName={getCurrentUser()!.name}
+          onClose={() => setShowWelcome(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -108,15 +167,28 @@ function AppLayout() {
 
           {/* Footer */}
           <div className="p-4 border-t border-slate-200">
-            <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
-              <p className="text-xs font-semibold text-slate-700 mb-1">Financial Health</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-200 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style={{ width: '75%' }} />
+            <div className="px-4 py-3 bg-slate-50 rounded-xl mb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-xs font-bold text-slate-700">75%</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{getCurrentUser()?.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{getCurrentUser()?.email}</p>
+                </div>
               </div>
             </div>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('welcome_shown');
+                logout();
+                window.location.href = '/login';
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </div>
         </div>
       </aside>
