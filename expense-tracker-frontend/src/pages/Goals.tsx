@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Target, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Edit2, Trash2, X, Sparkles, CalendarDays, Eye, ArrowLeft, Brain, Receipt } from 'lucide-react';
+import { Plus, Target, TrendingUp, Calendar, DollarSign, AlertCircle, CheckCircle, Edit2, Trash2, X, Sparkles, CalendarDays, Eye, ArrowLeft, Brain, Receipt, Flag } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 interface Contribution {
@@ -12,6 +12,13 @@ interface Expense {
   id: string;
   description: string;
   amount: number;
+  date: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  description: string;
   date: string;
 }
 
@@ -31,6 +38,7 @@ interface Goal {
   completedDate?: string;
   budget?: number;
   expenses?: Expense[];
+  milestones?: Milestone[];
 }
 
 interface AIInsight {
@@ -54,6 +62,7 @@ export default function Goals() {
   const [showContributionDetails, setShowContributionDetails] = useState(false);
   const [showAIAnalyzer, setShowAIAnalyzer] = useState(false);
   const [showExpenseTracker, setShowExpenseTracker] = useState(false);
+  const [showMilestoneTracker, setShowMilestoneTracker] = useState(false);
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -61,6 +70,7 @@ export default function Goals() {
   const [hoveredGoal, setHoveredGoal] = useState<string | null>(null);
   const [hoveredInsight, setHoveredInsight] = useState<string | null>(null);
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
+  const [newMilestone, setNewMilestone] = useState({ title: '', description: '' });
   const [formData, setFormData] = useState({
     name: '',
     targetAmount: '',
@@ -369,6 +379,35 @@ export default function Goals() {
     setSelectedGoal(updatedGoal);
   };
 
+  const handleAddMilestone = () => {
+    if (!selectedGoal || !newMilestone.title) return;
+    
+    const milestone: Milestone = {
+      id: `ms-${Date.now()}`,
+      title: newMilestone.title,
+      description: newMilestone.description,
+      date: new Date().toISOString(),
+    };
+    
+    const updatedGoal: Goal = {
+      ...selectedGoal,
+      milestones: [...(selectedGoal.milestones || []), milestone],
+    };
+    saveData(goals.map(g => g.id === selectedGoal.id ? updatedGoal : g));
+    setSelectedGoal(updatedGoal);
+    setNewMilestone({ title: '', description: '' });
+  };
+
+  const handleDeleteMilestone = (milestoneId: string) => {
+    if (!selectedGoal) return;
+    const updatedGoal: Goal = {
+      ...selectedGoal,
+      milestones: (selectedGoal.milestones || []).filter(m => m.id !== milestoneId),
+    };
+    saveData(goals.map(g => g.id === selectedGoal.id ? updatedGoal : g));
+    setSelectedGoal(updatedGoal);
+  };
+
   const resetForm = () => {
     setFormData({ name: '', targetAmount: '', capitalInHand: '', targetDate: '', category: 'Other', priority: 'Medium', description: '', budget: '' });
     setEditingGoal(null);
@@ -464,6 +503,10 @@ export default function Goals() {
                         <p className="text-xs text-slate-500">🎯 {new Date(goal.targetDate).toLocaleDateString()}</p>
                       </div>
                       <div className="flex gap-1">
+                        <button onClick={() => { setSelectedGoal(goal); setShowMilestoneTracker(true); }} className="px-2 py-1 bg-purple-50/50 text-purple-600 text-xs rounded-lg hover:bg-purple-100/50 flex items-center gap-1 transition-colors">
+                          <Flag className="w-3 h-3" />
+                          Milestones
+                        </button>
                         <button onClick={() => { setSelectedGoal(goal); setShowExpenseTracker(true); }} className="px-2 py-1 bg-blue-50/50 text-blue-600 text-xs rounded-lg hover:bg-blue-100/50 flex items-center gap-1 transition-colors">
                           <Receipt className="w-3 h-3" />
                           Log Expenses
@@ -1088,6 +1131,82 @@ export default function Goals() {
           </div>
         </div>
       )})()}
+
+      {showMilestoneTracker && selectedGoal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Flag className="w-6 h-6 text-white" />
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Milestones</h2>
+                  <p className="text-sm text-purple-100">{selectedGoal.name}</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowMilestoneTracker(false); setSelectedGoal(null); setNewMilestone({ title: '', description: '' }); }} className="p-2 hover:bg-purple-800 rounded-lg">
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Add New Milestone</h3>
+                <div className="space-y-2">
+                  <input 
+                    type="text" 
+                    value={newMilestone.title} 
+                    onChange={e => setNewMilestone({ ...newMilestone, title: e.target.value })} 
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-600 text-sm" 
+                    placeholder="Milestone title (e.g., Reached 50% of goal)" 
+                  />
+                  <textarea 
+                    value={newMilestone.description} 
+                    onChange={e => setNewMilestone({ ...newMilestone, description: e.target.value })} 
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-600 text-sm" 
+                    rows={2}
+                    placeholder="Description (optional)" 
+                  />
+                  <button onClick={handleAddMilestone} className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-1">
+                    <Plus className="w-4 h-4" />
+                    Add Milestone
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3">Milestone History ({(selectedGoal.milestones || []).length})</h4>
+                {(selectedGoal.milestones || []).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Flag className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                    <p className="text-sm text-slate-500">No milestones logged yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(selectedGoal.milestones || []).map((milestone) => (
+                      <div key={milestone.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Flag className="w-4 h-4 text-purple-600" />
+                              <h5 className="font-semibold text-slate-900">{milestone.title}</h5>
+                            </div>
+                            {milestone.description && (
+                              <p className="text-sm text-slate-600 mb-2">{milestone.description}</p>
+                            )}
+                            <p className="text-xs text-slate-500">{new Date(milestone.date).toLocaleDateString()} at {new Date(milestone.date).toLocaleTimeString()}</p>
+                          </div>
+                          <button onClick={() => handleDeleteMilestone(milestone.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAIAnalyzer && (() => {
         const analysis = generateAIAnalysis();
